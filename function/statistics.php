@@ -24,14 +24,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($_POST['action'] === "createStatistic") {
         $title = $_POST['title'] ?? '';
         $countData = $_POST['countData'] ?? '';
+        $visibale = isset($_POST['visibale']) ? (int)$_POST['visibale'] : 0;
+        $icon = $_POST['icon'] ?? '';
 
         if (empty($title) || empty($countData)) {
             echo json_encode(["error" => "Title and countData are required"]);
             exit;
         }
 
-        $stmt = $pdo->prepare("INSERT INTO statistics (title, countData, visibale) VALUES (?, ?, 0)");
-        if ($stmt->execute([$title, $countData])) {
+        $stmt = $pdo->prepare("INSERT INTO statistics (title, countData, visibale, icon) VALUES (?, ?, ?, ?)");
+        if ($stmt->execute([$title, $countData, $visibale, $icon])) {
             echo json_encode(["Status" => "Success"]);
         } else {
             echo json_encode(["error" => "Failed to insert statistic", "details" => $stmt->errorInfo()]);
@@ -47,14 +49,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $title = $_POST['title'] ?? '';
         $countData = $_POST['countData'] ?? '';
         $visibale = isset($_POST['visibale']) ? (int)$_POST['visibale'] : 0;
+        $icon = $_POST['icon'] ?? '';
 
         if (!$id || empty($title) || empty($countData)) {
             echo json_encode(["error" => "ID, title, and countData are required"]);
             exit;
         }
 
-        $stmt = $pdo->prepare("UPDATE statistics SET title = ?, countData = ?, visibale = ? WHERE id = ?");
-        if ($stmt->execute([$title, $countData, $visibale, $id])) {
+        $stmt = $pdo->prepare("UPDATE statistics SET title = ?, countData = ?, visibale = ?, icon = ? WHERE id = ?");
+        if ($stmt->execute([$title, $countData, $visibale, $icon, $id])) {
             echo json_encode(["Status" => "Success"]);
         } else {
             echo json_encode(["error" => "Failed to update statistic", "details" => $stmt->errorInfo()]);
