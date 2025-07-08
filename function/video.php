@@ -6,11 +6,9 @@ header("Content-Type: application/json");
 
 include "../config.php";
 
-// Enable error reporting
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
-// Handle POST requests
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!isset($_POST['action'])) {
         echo json_encode(["error" => "Action not specified"]);
@@ -19,51 +17,54 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     if ($_POST['action'] === "createVideo") {
         $Title = $_POST['title'] ?? '';
-        $CloseDate = $_POST['vidoe_url'] ?? '';
+        $VideoUrl = $_POST['vidoe_url'] ?? '';
+        $ShortDesc = $_POST['short_desc'] ?? '';
 
-        $stmt = $pdo->prepare("INSERT INTO video(title, video_url)
-        VALUES (?, ?)");
+        $stmt = $pdo->prepare("INSERT INTO videos(title, video_url, short_desc, add_date) VALUES (?, ?, ?, CURRENT_DATE)");
 
-        if ($stmt->execute([$Title, $notice_file_path, $application_file_path, $CloseDate])) {
+        if ($stmt->execute([$Title, $VideoUrl, $ShortDesc])) {
             echo json_encode(["Status" => "Success"]);
         } else {
             $errorInfo = $stmt->errorInfo();
-            echo json_encode(["error" => "Internal Server Error while Creating Vacancies", "details" => $errorInfo]);
+            echo json_encode(["error" => "Internal Server Error while creating video", "details" => $errorInfo]);
         }
     }
 
-    if ($_POST['action'] === "updateVacancy") {
-        $vacancyID = $_POST['id'] ?? null;
+    if ($_POST['action'] === "updateVideo") {
+        $videoID = $_POST['id'] ?? null;
 
-        if (!$vacancyID) {
-            echo json_encode(["error" => "Vacancy ID is required"]);
+        if (!$videoID) {
+            echo json_encode(["error" => "Video ID is required"]);
             exit;
         }
 
-        // Check at least one field or file is set for update
-        if (empty($_POST['title']) && empty($_POST['vidoe_url'])) {
-            echo json_encode(["error" => "At least one field or file is required to update"]);
+        if (empty($_POST['title']) && empty($_POST['vidoe_url']) && empty($_POST['short_desc'])) {
+            echo json_encode(["error" => "At least one field is required to update"]);
             exit;
         }
 
-        $title = $_POST['title'] ?? '';
-        $closingdate = $_POST['vidoe_url'] ?? '';
+        $title = $_POST['title'] ?? null;
+        $videoUrl = $_POST['vidoe_url'] ?? null;
+        $shortDesc = $_POST['short_desc'] ?? null;
 
-        $updateQuery = "UPDATE video SET ";
+        $updateQuery = "UPDATE videos SET ";
         $params = [];
 
         if ($title) {
             $updateQuery .= "title = ?, ";
             $params[] = $title;
         }
-
-        if ($target_notice_file) {
+        if ($videoUrl) {
             $updateQuery .= "video_url = ?, ";
-            $params[] = $target_notice_file;
+            $params[] = $videoUrl;
+        }
+        if ($shortDesc) {
+            $updateQuery .= "short_desc = ?, ";
+            $params[] = $shortDesc;
         }
 
         $updateQuery = rtrim($updateQuery, ', ') . " WHERE id = ?";
-        $params[] = $vacancyID;
+        $params[] = $videoID;
 
         $stmt = $pdo->prepare($updateQuery);
 
@@ -71,16 +72,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             echo json_encode(["Status" => "Success"]);
         } else {
             $errorInfo = $stmt->errorInfo();
-            echo json_encode([
-                "error" => "Failed to update vacancy",
-                "sql_error" => $errorInfo
-            ]);
+            echo json_encode(["error" => "Failed to update video", "details" => $errorInfo]);
         }
     }
-
 }
 
-// Handle GET requests
 elseif ($_SERVER['REQUEST_METHOD'] === 'GET') {
     if (!isset($_GET['action'])) {
         echo json_encode(["error" => "Action not specified"]);
@@ -88,12 +84,12 @@ elseif ($_SERVER['REQUEST_METHOD'] === 'GET') {
     }
 
     if ($_GET['action'] === "getallvideos") {
-        $getstmt = $pdo->prepare("SELECT * FROM video");
+        $getstmt = $pdo->prepare("SELECT * FROM videos ORDER BY id DESC");
         $getstmt->execute();
-        $vacancies = $getstmt->fetchAll(PDO::FETCH_ASSOC);
+        $videos = $getstmt->fetchAll(PDO::FETCH_ASSOC);
 
-        if ($vacancies) {
-            echo json_encode(["Status" => "Success", "Result" => $vacancies]);
+        if ($videos) {
+            echo json_encode(["Status" => "Success", "Result" => $videos]);
         } else {
             echo json_encode(["Status" => "Error", "Result" => []]);
         }

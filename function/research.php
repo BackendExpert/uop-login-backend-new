@@ -49,83 +49,73 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     // =====================
-    // CREATE RESEARCH STATS
+    // CREATE RESEARCH HEIGHTLIGHT
     // =====================
-    if ($_POST['action'] === "createResearchStats") {
+    if ($_POST['action'] === "createResearchHeightlight") {
         $year = $_POST['year'] ?? null;
         if (!$year) {
             echo json_encode(["error" => "Year is required"]);
             exit;
         }
 
-        $research_journals = (int)($_POST['research_journals'] ?? 0);
-        $research_publications = (int)($_POST['research_publications'] ?? 0);
-        $citations = (int)($_POST['citations'] ?? 0);
-        $research_ranking = (int)($_POST['research_ranking'] ?? 0);
-        $number_of_researchers_top2_percent = (int)($_POST['number_of_researchers_top2_percent'] ?? 0);
-        $annual_research_conferences = (int)($_POST['annual_research_conferences'] ?? 0);
-        $annual_research_collaborations = (int)($_POST['annual_research_collaborations'] ?? 0);
-        $research_awards_and_recognitions = (int)($_POST['research_awards_and_recognitions'] ?? 0);
-        $annual_workshops_seminars = (int)($_POST['annual_workshops_seminars'] ?? 0);
-        $capital_grants_for_research = (float)($_POST['capital_grants_for_research'] ?? 0);
+        $column_title = $_POST['column_title'] ?? null;
+        $data_column = $_POST['data_column'] ?? null;
+        $is_active = isset($_POST['is_active']) ? (int)$_POST['is_active'] : 1;
 
-        $stmt = $pdo->prepare("INSERT INTO research_stats (
-            year, research_journals, research_publications, citations, research_ranking,
-            number_of_researchers_top2_percent, annual_research_conferences, annual_research_collaborations,
-            research_awards_and_recognitions, annual_workshops_seminars, capital_grants_for_research
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        if (!$column_title || !$data_column) {
+            echo json_encode(["error" => "column_title and data_column are required"]);
+            exit;
+        }
+
+        $stmt = $pdo->prepare("INSERT INTO research_heightlight (
+            column_title, data_column, year, is_active
+        ) VALUES (?, ?, ?, ?)");
 
         if ($stmt->execute([
-            $year, $research_journals, $research_publications, $citations, $research_ranking,
-            $number_of_researchers_top2_percent, $annual_research_conferences, $annual_research_collaborations,
-            $research_awards_and_recognitions, $annual_workshops_seminars, $capital_grants_for_research
+            $column_title, $data_column, $year, $is_active
         ])) {
             echo json_encode(["Status" => "Success"]);
         } else {
-            echo json_encode(["error" => "Failed to create research stats", "details" => $stmt->errorInfo()]);
+            echo json_encode(["error" => "Failed to create research heightlight", "details" => $stmt->errorInfo()]);
         }
         exit;
     }
 
+
     // =====================
-    // UPDATE RESEARCH STATS
+    // UPDATE RESEARCH HEIGHTLIGHT
     // =====================
-    if ($_POST['action'] === "updateResearchStats") {
+    if ($_POST['action'] === "updateResearchHeightlight") {
         $id = $_POST['id'] ?? null;
         if (!$id) {
             echo json_encode(["error" => "ID is required"]);
             exit;
         }
 
+        $column_title = $_POST['column_title'] ?? null;
+        $data_column = $_POST['data_column'] ?? null;
         $year = $_POST['year'] ?? null;
-        $research_journals = (int)($_POST['research_journals'] ?? 0);
-        $research_publications = (int)($_POST['research_publications'] ?? 0);
-        $citations = (int)($_POST['citations'] ?? 0);
-        $research_ranking = (int)($_POST['research_ranking'] ?? 0);
-        $number_of_researchers_top2_percent = (int)($_POST['number_of_researchers_top2_percent'] ?? 0);
-        $annual_research_conferences = (int)($_POST['annual_research_conferences'] ?? 0);
-        $annual_research_collaborations = (int)($_POST['annual_research_collaborations'] ?? 0);
-        $research_awards_and_recognitions = (int)($_POST['research_awards_and_recognitions'] ?? 0);
-        $annual_workshops_seminars = (int)($_POST['annual_workshops_seminars'] ?? 0);
-        $capital_grants_for_research = (float)($_POST['capital_grants_for_research'] ?? 0);
+        $is_active = isset($_POST['is_active']) ? (int)$_POST['is_active'] : 1;
 
-        $stmt = $pdo->prepare("UPDATE research_stats SET 
-            year=?, research_journals=?, research_publications=?, citations=?, research_ranking=?,
-            number_of_researchers_top2_percent=?, annual_research_conferences=?, annual_research_collaborations=?,
-            research_awards_and_recognitions=?, annual_workshops_seminars=?, capital_grants_for_research=?
+        if (!$column_title || !$data_column || !$year) {
+            echo json_encode(["error" => "column_title, data_column, and year are required"]);
+            exit;
+        }
+
+        $stmt = $pdo->prepare("UPDATE research_heightlight SET 
+            column_title=?, data_column=?, year=?, is_active=?
             WHERE id=?");
 
         if ($stmt->execute([
-            $year, $research_journals, $research_publications, $citations, $research_ranking,
-            $number_of_researchers_top2_percent, $annual_research_conferences, $annual_research_collaborations,
-            $research_awards_and_recognitions, $annual_workshops_seminars, $capital_grants_for_research, $id
+            $column_title, $data_column, $year, $is_active, $id
         ])) {
             echo json_encode(["Status" => "Success"]);
         } else {
-            echo json_encode(["error" => "Failed to update research stats", "details" => $stmt->errorInfo()]);
+            echo json_encode(["error" => "Failed to update research heightlight", "details" => $stmt->errorInfo()]);
         }
         exit;
     }
+
 
     // =====================
     // UPDATE RESEARCH
@@ -258,20 +248,20 @@ elseif ($_SERVER['REQUEST_METHOD'] === 'GET') {
         exit;
     }
 
-    if ($_GET['action'] === "getResearchStats") {
-        $stmt = $pdo->prepare("SELECT * FROM research_stats ORDER BY year DESC");
+    if ($_GET['action'] === "getResearchHeightlight") {
+        $stmt = $pdo->prepare("SELECT * FROM research_heightlight ORDER BY year DESC");
         $stmt->execute();
         echo json_encode(["Status" => "Success", "Result" => $stmt->fetchAll(PDO::FETCH_ASSOC)]);
         exit;
     }
 
-    if ($_GET['action'] === "getResearchStatsById") {
+    if ($_GET['action'] === "getResearchHeightlightById") {
         $id = $_GET['id'] ?? null;
         if (!$id) {
             echo json_encode(["error" => "ID required"]);
             exit;
         }
-        $stmt = $pdo->prepare("SELECT * FROM research_stats WHERE id = ?");
+        $stmt = $pdo->prepare("SELECT * FROM research_heightlight WHERE id = ?");
         $stmt->execute([$id]);
         $data = $stmt->fetch(PDO::FETCH_ASSOC);
         if ($data) {
