@@ -19,13 +19,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $island = $_POST['island'] ?? '';
         $asian = $_POST['asian'] ?? '';
         $world = $_POST['world'] ?? '';
-        $year = $_POST['year'] ?? null;
+        $year = $_POST['year'] ?? date('Y');
         $theur = $_POST['theur'] ?? '';
         $their = $_POST['their'] ?? '';
         $usnw = $_POST['usnw'] ?? '';
         $qsur = $_POST['qsur'] ?? '';
         $wrwu = $_POST['wrwu'] ?? '';
         $uig = $_POST['uig'] ?? '';
+        
+        $checkStmt = $pdo->prepare("SELECT COUNT(*) FROM rankings WHERE year = ?");
+        $checkStmt->execute([$year]);
+        $count = $checkStmt->fetchColumn();
+
+        if ($count > 0) {
+            echo json_encode(["error" => "Duplicate entry"]);
+            exit;
+        }
+
 
         $stmt = $pdo->prepare("INSERT INTO rankings (island, asian, world, year, theur, their, usnw, qsur, wrwu, uig) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
@@ -36,6 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             echo json_encode(["error" => "Internal Server Error while creating record", "details" => $errorInfo]);
         }
     }
+
 
     if ($_POST['action'] === "updateRankings") {
         $id = $_POST['id'] ?? null;
