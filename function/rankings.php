@@ -16,17 +16,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($_POST['action'] === "createRankings") {
-        $island = $_POST['island'] ?? '';
-        $asian = $_POST['asian'] ?? '';
-        $world = $_POST['world'] ?? '';
         $year = $_POST['year'] ?? date('Y');
-        $theur = $_POST['theur'] ?? '';
-        $their = $_POST['their'] ?? '';
-        $usnw = $_POST['usnw'] ?? '';
-        $qsur = $_POST['qsur'] ?? '';
-        $wrwu = $_POST['wrwu'] ?? '';
-        $uig = $_POST['uig'] ?? '';
-        
+
+        // Check for duplicate year
         $checkStmt = $pdo->prepare("SELECT COUNT(*) FROM rankings WHERE year = ?");
         $checkStmt->execute([$year]);
         $count = $checkStmt->fetchColumn();
@@ -36,17 +28,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
 
+        // Ranking systems
+        $rankingSystems = ['theur', 'their', 'usnw', 'qsur', 'wrwu', 'uig'];
 
-        $stmt = $pdo->prepare("INSERT INTO rankings (island, asian, world, year, theur, their, usnw, qsur, wrwu, uig) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $columns = ['year'];
+        $placeholders = ['?'];
+        $values = [$year];
 
-        if ($stmt->execute([$island, $asian, $world, $year, $theur, $their, $usnw, $qsur, $wrwu, $uig])) {
+        foreach ($rankingSystems as $system) {
+            foreach (['islandrank', 'asianrank', 'worldrank'] as $rankType) {
+                $key = "{$system}_{$rankType}";
+                $columns[] = $key;
+                $placeholders[] = '?';
+                $values[] = $_POST[$key] ?? '';
+            }
+        }
+
+        $sql = "INSERT INTO rankings (" . implode(', ', $columns) . ") VALUES (" . implode(', ', $placeholders) . ")";
+        $stmt = $pdo->prepare($sql);
+
+        if ($stmt->execute($values)) {
             echo json_encode(["Status" => "Success"]);
         } else {
             $errorInfo = $stmt->errorInfo();
             echo json_encode(["error" => "Internal Server Error while creating record", "details" => $errorInfo]);
         }
     }
-
 
     if ($_POST['action'] === "updateRankings") {
         $id = $_POST['id'] ?? null;
@@ -56,23 +63,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
 
-        $fields = ['island', 'asian', 'world', 'year', 'theur', 'their', 'usnw', 'qsur', 'wrwu', 'uig'];
-        $setParts = [];
+        $fields = ['year'];
         $params = [];
 
-        foreach ($fields as $field) {
-            if (isset($_POST[$field])) {
-                $setParts[] = "$field = ?";
-                $params[] = $_POST[$field];
+        $rankingSystems = ['theur', 'their', 'usnw', 'qsur', 'wrwu', 'uig'];
+
+        foreach ($rankingSystems as $system) {
+            foreach (['islandrank', 'asianrank', 'worldrank'] as $rankType) {
+                $key = "{$system}_{$rankType}";
+                if (isset($_POST[$key])) {
+                    $fields[] = "$key = ?";
+                    $params[] = $_POST[$key];
+                }
             }
         }
 
-        if (empty($setParts)) {
+        if (isset($_POST['year'])) {
+            $params[] = $_POST['year'];
+        }
+
+        if (empty($fields)) {
             echo json_encode(["error" => "At least one field is required to update"]);
             exit;
         }
 
-        $query = "UPDATE rankings SET " . implode(', ', $setParts) . " WHERE id = ?";
+        $query = "UPDATE rankings SET " . implode(', ', $fields) . " WHERE id = ?";
         $params[] = $id;
 
         $stmt = $pdo->prepare($query);
